@@ -1,6 +1,6 @@
 import { ApiError } from "@platform/contracts";
 import { prisma } from "../../../db/client.js";
-import type { Recipe as PrismaRecipe, RecipeIngredient as PrismaRecipeIngredient } from "../../../generated/prisma/index.js";
+import type { Recipe as PrismaRecipe, RecipeIngredient as PrismaRecipeIngredient } from "@platform/db";
 
 export type RecipeWithIngredients = PrismaRecipe & { ingredients: PrismaRecipeIngredient[] };
 

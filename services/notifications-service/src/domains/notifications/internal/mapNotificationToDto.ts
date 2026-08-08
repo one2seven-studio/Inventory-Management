@@ -1,5 +1,5 @@
 import type { Notification, NotificationType } from "@platform/contracts";
-import type { Notification as PrismaNotification } from "../../../generated/prisma/index.js";
+import type { Notification as PrismaNotification } from "@platform/db";
 
 export function mapNotificationToDto(row: PrismaNotification): Notification {
   return {

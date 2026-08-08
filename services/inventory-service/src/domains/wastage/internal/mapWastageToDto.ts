@@ -1,5 +1,5 @@
 import type { WastageLog, WastageReason } from "@platform/contracts";
-import type { WastageLog as PrismaWastageLog } from "../../../generated/prisma/index.js";
+import type { WastageLog as PrismaWastageLog } from "@platform/db";
 
 export function mapWastageToDto(log: PrismaWastageLog): WastageLog {
   return {

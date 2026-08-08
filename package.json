@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build:shared": "npm run build -w packages/contracts -w packages/http-client",
+    "build:shared": "npm run db:generate -w packages/db && npm run build -w packages/contracts -w packages/http-client -w packages/db",
     "predev": "npm run build:shared",
     "predev:core": "npm run build:shared",
     "prebuild": "npm run build:shared",

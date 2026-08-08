@@ -1,5 +1,5 @@
 import type { Grn, GrnLineResult } from "@platform/contracts";
-import type { Grn as PrismaGrn, GrnLine as PrismaGrnLine } from "../../../generated/prisma/index.js";
+import type { Grn as PrismaGrn, GrnLine as PrismaGrnLine } from "@platform/db";
 
 export type PrismaGrnWithLines = PrismaGrn & { lines: PrismaGrnLine[] };
 

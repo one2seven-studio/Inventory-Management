@@ -1,0 +1,441 @@
+// Single shared Prisma schema for the whole platform. Every backend service
+// (except reporting-service, which is fully stateless) reads/writes through
+// this one generated client via @platform/db — no per-service schema.prisma
+// or generated client anymore. Each service still owns its own Postgres
+// **schema** (identity/inventory/purchasing/recipes/notifications) inside
+// the one shared database — the `multiSchema` preview feature + `@@schema(...)`
+// on every model is what enforces that boundary, not separate connections.
+generator client {
+  provider = "prisma-client-js"
+  // Generated as a sibling of both src/ and dist/ (not nested inside src/)
+  // so the same relative import — "../generated/prisma/index.js" — resolves
+  // correctly from both src/index.ts (dev/typecheck) and the tsc-compiled
+  // dist/index.js (same relative depth from packages/db/ either way).
+  output = "../generated/prisma"
+  // The default native query engine loads a binary via code that isn't
+  // bundler-safe (breaks with "__dirname is not defined" under Vercel's
+  // Node.js Function bundler). The Neon driver adapter (see src/client.ts)
+  // replaces it with Neon's WebSocket driver — no native engine to load.
+  previewFeatures = ["driverAdapters", "multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["identity", "inventory", "purchasing", "recipes", "notifications"]
+}
+
+// ============================================================================
+// identity-service — users, roles (RBAC), JWT auth
+// ============================================================================
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roles         UserRole[]
+  locations     UserLocation[]
+  refreshTokens RefreshToken[]
+
+  @@schema("identity")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  role   String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@schema("identity")
+}
+
+model UserLocation {
+  id         String @id @default(cuid())
+  userId     String
+  locationId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@schema("identity")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("identity")
+}
+
+// ============================================================================
+// inventory-service — items, locations, stock ledger, batches, wastage,
+// transfers
+// ============================================================================
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  storageAreas StorageArea[]
+
+  @@schema("inventory")
+}
+
+model StorageArea {
+  id         String @id @default(cuid())
+  locationId String
+  name       String
+  type       String
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model Item {
+  id                     String   @id @default(cuid())
+  sku                    String   @unique
+  name                   String
+  category               String
+  subCategory            String?
+  description            String?
+  imageUrl               String?
+  barcode                String?  @unique
+  purchaseUom            String
+  stockUom               String
+  recipeUom              String
+  purchaseToStockFactor  Float
+  stockToRecipeFactor    Float
+  isPerishable           Boolean  @default(false)
+  defaultShelfLifeDays   Int?
+  lastPurchasePrice      Float?
+  averageCost            Float?
+  status                 String   @default("ACTIVE")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  stockLevels  StockLevel[]
+  transactions StockTransaction[]
+  batches      Batch[]
+  wastageLogs  WastageLog[]
+
+  @@schema("inventory")
+}
+
+// On-hand balance is tracked per item+location (not per storage sub-area —
+// storage area is captured as descriptive metadata on individual
+// transactions instead, keeping the ledger's unique-balance key simple).
+model StockLevel {
+  id             String @id @default(cuid())
+  itemId         String
+  locationId     String
+  quantityOnHand Float  @default(0)
+  parLevel       Float?
+  minLevel       Float?
+  maxLevel       Float?
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, locationId])
+  @@schema("inventory")
+}
+
+model StockTransaction {
+  id             String   @id @default(cuid())
+  itemId         String
+  locationId     String
+  storageAreaId  String?
+  type           String
+  quantity       Float
+  runningBalance Float
+  unitCost       Float?
+  batchId        String?
+  referenceType  String?
+  referenceId    String?
+  reasonCode     String?
+  userId         String
+  createdAt      DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model Batch {
+  id                String    @id @default(cuid())
+  itemId            String
+  locationId        String
+  batchNumber       String
+  expiryDate        DateTime?
+  receivedQuantity  Float
+  remainingQuantity Float
+  unitCost          Float
+  createdAt         DateTime  @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model WastageLog {
+  id         String   @id @default(cuid())
+  itemId     String
+  locationId String
+  station    String?
+  quantity   Float
+  reason     String
+  costImpact Float
+  photoUrl   String?
+  userId     String
+  createdAt  DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model StockTransferRequest {
+  id                     String    @id @default(cuid())
+  itemId                 String
+  sourceLocationId       String
+  destinationLocationId  String
+  requestedQuantity      Float
+  dispatchedQuantity     Float?
+  receivedQuantity       Float?
+  status                 String    @default("REQUESTED")
+  requestedByUserId      String
+  approvedByUserId       String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@schema("inventory")
+}
+
+// ============================================================================
+// purchasing-service — suppliers, supplier item prices, purchase orders, GRNs
+// ============================================================================
+
+model Supplier {
+  id               String   @id @default(cuid())
+  name             String
+  contactName      String?
+  contactEmail     String?
+  contactPhone     String?
+  paymentTerms     String?
+  leadTimeDays     Int?
+  deliverySchedule String?
+  rating           Float?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  itemPrices     SupplierItemPrice[]
+  purchaseOrders PurchaseOrder[]
+
+  @@schema("purchasing")
+}
+
+// PRD §3.2 — item-supplier price list with a preferred supplier per item.
+// `isPreferred` is enforced as "at most one per itemId" at the application
+// layer (see upsertSupplierItemPrice), not a DB constraint, since Postgres
+// partial-unique-index support isn't modeled through Prisma's schema DSL.
+model SupplierItemPrice {
+  id          String   @id @default(cuid())
+  supplierId  String
+  itemId      String
+  price       Float
+  packSize    String?
+  moq         Float?
+  isPreferred Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, itemId])
+  @@index([itemId])
+  @@schema("purchasing")
+}
+
+// PRD §3.3 — Draft -> Pending Approval -> Sent -> Confirmed -> Partially
+// Received -> Received -> Closed (or Rejected), with timestamped history.
+model PurchaseOrder {
+  id               String   @id @default(cuid())
+  poNumber         String   @unique
+  supplierId       String
+  locationId       String
+  status           String   @default("DRAFT")
+  totalAmount      Float    @default(0)
+  createdByUserId  String
+  approvedByUserId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  supplier      Supplier                   @relation(fields: [supplierId], references: [id])
+  lines         PurchaseOrderLine[]
+  statusHistory PurchaseOrderStatusEvent[]
+  grns          Grn[]
+
+  @@index([status])
+  @@index([locationId])
+  @@index([supplierId])
+  @@schema("purchasing")
+}
+
+model PurchaseOrderLine {
+  id               String @id @default(cuid())
+  purchaseOrderId  String
+  itemId           String
+  quantityOrdered  Float
+  unitPrice        Float
+  quantityReceived Float  @default(0)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  grnLines      GrnLine[]
+
+  @@index([purchaseOrderId])
+  @@schema("purchasing")
+}
+
+// Immutable append-only status trail backing `PurchaseOrder.statusHistory`
+// in the API contract — modeled as a related table (rather than a JSON
+// column) so it reads/writes like every other audit-log pattern in this
+// platform and stays queryable.
+model PurchaseOrderStatusEvent {
+  id              String   @id @default(cuid())
+  purchaseOrderId String
+  status          String
+  byUserId        String
+  at              DateTime @default(now())
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@schema("purchasing")
+}
+
+// PRD §3.4 — Goods Receipt Note: received quantities + per-line discrepancy
+// vs. ordered quantity, captured at receiving time.
+model Grn {
+  id               String   @id @default(cuid())
+  purchaseOrderId  String
+  locationId       String
+  storageAreaId    String?
+  hasDiscrepancy   Boolean  @default(false)
+  receivedByUserId String
+  createdAt        DateTime @default(now())
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  lines         GrnLine[]
+
+  @@index([purchaseOrderId])
+  @@schema("purchasing")
+}
+
+model GrnLine {
+  id               String    @id @default(cuid())
+  grnId            String
+  itemId           String
+  poLineId         String
+  quantityOrdered  Float
+  quantityReceived Float
+  discrepancy      Float
+  discrepancyType  String
+  batchNumber      String?
+  expiryDate       DateTime?
+
+  grn    Grn               @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  poLine PurchaseOrderLine @relation(fields: [poLineId], references: [id])
+
+  @@index([grnId])
+  @@schema("purchasing")
+}
+
+// ============================================================================
+// recipes-service — recipe/BOM definitions + versions and their ingredient
+// lines. Raw item master data and stock levels live in inventory-service and
+// are only ever reached over HTTP, never joined here.
+// ============================================================================
+
+// A recipe is versioned: editing ingredients never mutates a row in place,
+// it inserts a new row and flips isActive. `recipeGroupId` is the stable
+// identifier for "this recipe" across all its versions — it defaults to the
+// row's own id on first creation (see createRecipe) and is copied forward
+// on every subsequent version (see updateRecipe).
+model Recipe {
+  id            String   @id @default(cuid())
+  recipeGroupId String
+  name          String
+  type          String // "MENU_ITEM" | "SUB_RECIPE"
+  yieldQuantity Float
+  yieldUnit     String
+  sellingPrice  Float?
+  version       Int      @default(1)
+  effectiveFrom DateTime @default(now())
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  ingredients RecipeIngredient[]
+
+  @@index([recipeGroupId])
+  @@schema("recipes")
+}
+
+// An ingredient line references exactly one of a raw inventory-service item
+// (ingredientItemId) or another recipe (ingredientRecipeId, for nested
+// sub-recipes) — never both, enforced in application code since Prisma
+// doesn't support cross-field XOR constraints.
+model RecipeIngredient {
+  id                 String  @id @default(cuid())
+  recipeId           String
+  ingredientItemId   String?
+  ingredientRecipeId String?
+  quantity           Float
+  unit               String
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@schema("recipes")
+}
+
+// ============================================================================
+// notifications-service — in-app notification center rows, plus the
+// internal bookkeeping alert-rules detection uses to dedupe repeat
+// LOW_STOCK/EXPIRING_SOON alerts.
+// ============================================================================
+
+model Notification {
+  id           String   @id @default(cuid())
+  type         String
+  title        String
+  message      String
+  targetUserId String?
+  targetRoles  String[] @default([])
+  locationId   String?
+  // Internal-only correlation key (itemId for LOW_STOCK, batchId for
+  // EXPIRING_SOON) used by alert-rules to dedupe repeat alerts within a
+  // rolling window. Not part of the public Notification DTO.
+  referenceId  String?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@schema("notifications")
+}

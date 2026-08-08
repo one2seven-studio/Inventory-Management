@@ -1,5 +1,5 @@
 import type { Recipe, RecipeType } from "@platform/contracts";
-import type { Recipe as PrismaRecipe, RecipeIngredient as PrismaRecipeIngredient } from "../../../generated/prisma/index.js";
+import type { Recipe as PrismaRecipe, RecipeIngredient as PrismaRecipeIngredient } from "@platform/db";
 
 type RecipeWithIngredients = PrismaRecipe & { ingredients: PrismaRecipeIngredient[] };
 

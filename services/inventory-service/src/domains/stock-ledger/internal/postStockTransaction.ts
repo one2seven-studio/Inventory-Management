@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "../../../generated/prisma/index.js";
+import type { Prisma, PrismaClient } from "@platform/db";
 import type { StockTransactionType } from "@platform/contracts";
 
 export interface PostStockTransactionArgs {

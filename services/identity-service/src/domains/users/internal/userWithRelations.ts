@@ -1,4 +1,4 @@
-import type { Prisma } from "../../../generated/prisma/index.js";
+import type { Prisma } from "@platform/db";
 
 export const userWithRelationsInclude = {
   roles: true,

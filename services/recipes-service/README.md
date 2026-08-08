@@ -4,15 +4,13 @@ Recipe/BOM management with costing, and POS-triggered + manual stock deduction �
 
 ## Run
 
-```bash
-Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file.
+Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file. The Prisma schema/client is shared across every service — see `packages/db`.
 
 ```bash
-npm run db:generate -w services/recipes-service
-npm run db:push -w services/recipes-service
+npm run db:push -w packages/db
 npm run db:seed -w services/recipes-service      # optional: one sample "Margherita Pizza" recipe
                                                    # (requires inventory-service running + seeded first)
-npm run dev -w services/recipes-service           # http://localhost:4004
+npm run dev -w services/recipes-service           # http://localhost:8004
 ```
 
 ## Routes
@@ -28,4 +26,4 @@ npm run dev -w services/recipes-service           # http://localhost:4004
 - **Ingredient tree flattening** (`src/domains/recipes/internal/flattenRecipeIngredients.ts`): shared by costing and both deduction paths. Recursively resolves nested sub-recipes into raw-item quantities (in each item's recipe UoM), scaling by the fraction of a sub-recipe's own yield consumed at each level. Rejects circular sub-recipe references.
 - **Recipe costing math** (`src/domains/recipes/functions/getRecipeCost.ts`): `Item.averageCost` (from inventory-service) is $ per unit of the item's *stock* UoM. A recipe ingredient's quantity is in the item's *recipe* UoM. Per-recipe-unit cost = `averageCost / stockToRecipeFactor`; `purchaseToStockFactor` isn't used here (it only matters when a GRN converts a purchase-order quantity into stock UoM before it ever reaches `averageCost`). See the code comment for the full reasoning.
 - **Server-to-server calls into inventory-service** (`src/lib/inventoryServiceClient.ts`): item lookups and `POST /stock/issue` are called with forwarded identity headers — either the real authenticated caller's (`src/lib/callerIdentity.ts`, manual issue) or a synthetic `system-pos-integration` / `MANAGER` identity (POS-triggered deduction, since that path has no logged-in user).
-- Shares the platform's one Postgres database, isolated in its own `recipes` schema via `?schema=recipes` on `DATABASE_URL`.
+- Shares the platform's one Postgres database and one Prisma schema/client (`packages/db`), isolated in its own `recipes` schema via `multiSchema` + `@@schema(...)`.

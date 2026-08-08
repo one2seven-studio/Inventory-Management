@@ -1,5 +1,5 @@
 import type { Item, ItemCategory, ItemStatus } from "@platform/contracts";
-import type { Item as PrismaItem } from "../../../generated/prisma/index.js";
+import type { Item as PrismaItem } from "@platform/db";
 
 export function mapItemToDto(item: PrismaItem): Item {
   return {

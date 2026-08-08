@@ -1,5 +1,5 @@
 import type { Location, LocationType, StorageArea, StorageAreaType } from "@platform/contracts";
-import type { Location as PrismaLocation, StorageArea as PrismaStorageArea } from "../../../generated/prisma/index.js";
+import type { Location as PrismaLocation, StorageArea as PrismaStorageArea } from "@platform/db";
 
 export function mapLocationToDto(location: PrismaLocation): Location {
   return {

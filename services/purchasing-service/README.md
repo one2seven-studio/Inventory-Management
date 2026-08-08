@@ -5,11 +5,10 @@ suggestions — PRD §3.2, §3.3, §3.4, and the reorder-suggestion part of §3.
 
 ## Run
 
-Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file.
+Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file. The Prisma schema/client is shared across every service — see `packages/db`.
 
 ```bash
-npm run db:generate -w services/purchasing-service
-npm run db:push -w services/purchasing-service
+npm run db:push -w packages/db
 npm run db:seed -w services/purchasing-service      # 2 suppliers + preferred prices against inventory-service's seeded items (inventory-service must be running)
 npm run dev -w services/purchasing-service           # http://localhost:8003
 ```
