@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Restaurant } from "@platform/contracts";
 import { Store, Plus } from "lucide-react";
 import { selectRestaurantAction, type SelectRestaurantActionState } from "@/actions/restaurants/selectRestaurant";
+import { useHardRedirect } from "@/lib/useHardRedirect";
 
 const initialState: SelectRestaurantActionState = {};
 
@@ -24,6 +25,7 @@ export function RestaurantSwitcher({
   canManageRestaurants: boolean;
 }) {
   const [state, formAction] = useActionState(selectRestaurantAction, initialState);
+  useHardRedirect(state.redirectTo);
 
   const addLink = canManageRestaurants ? (
     <Link

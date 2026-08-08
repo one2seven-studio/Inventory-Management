@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { ApiError, type LoginResult, type Location } from "@platform/contracts";
 import { getAuthedGatewayClient } from "@/lib/api/getAuthedGatewayClient";
 import { getGatewayClient } from "@/lib/api/gatewayClient";
@@ -9,6 +8,8 @@ import { getRememberMe } from "@/lib/session/getRememberMe";
 
 export interface CreateRestaurantActionState {
   error?: string;
+  /** See selectRestaurant.ts's SelectRestaurantActionState.redirectTo — same reasoning, same hard-navigation fix. */
+  redirectTo?: string;
 }
 
 /**
@@ -49,5 +50,5 @@ export async function createRestaurantAction(
     }
   }
 
-  redirect("/dashboard");
+  return { redirectTo: "/dashboard" };
 }

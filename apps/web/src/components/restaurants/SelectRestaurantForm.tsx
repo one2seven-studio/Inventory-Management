@@ -4,11 +4,14 @@ import { useActionState } from "react";
 import type { Restaurant } from "@platform/contracts";
 import { selectRestaurantAction, type SelectRestaurantActionState } from "@/actions/restaurants/selectRestaurant";
 import { Button } from "@/components/ui/Button";
+import { useHardRedirect } from "@/lib/useHardRedirect";
 
 const initialState: SelectRestaurantActionState = {};
 
 export function SelectRestaurantForm({ restaurants }: { restaurants: Restaurant[] }) {
   const [state, formAction, isPending] = useActionState(selectRestaurantAction, initialState);
+  useHardRedirect(state.redirectTo);
+  const isRedirecting = isPending || Boolean(state.redirectTo);
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
@@ -24,8 +27,8 @@ export function SelectRestaurantForm({ restaurants }: { restaurants: Restaurant[
         ))}
       </div>
       {state.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-      <Button type="submit" pending={isPending} className="w-full py-2">
-        {isPending ? "Switching…" : "Continue"}
+      <Button type="submit" pending={isRedirecting} className="w-full py-2">
+        {isRedirecting ? "Switching…" : "Continue"}
       </Button>
     </form>
   );
