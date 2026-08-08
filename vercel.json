@@ -23,13 +23,7 @@
         },
         "identity-service": {
             "root": "services/identity-service",
-            "entrypoint": "src/server.ts",
-            "buildCommand": "cd ../.. && npm run build:shared && cd services/identity-service && npx prisma generate && npm run build",
-            "functions": {
-                "src/server.ts": {
-                    "includeFiles": "src/generated/prisma/**"
-                }
-            }
+            "entrypoint": "Dockerfile.vercel"
         },
         "inventory-service": {
             "root": "services/inventory-service",

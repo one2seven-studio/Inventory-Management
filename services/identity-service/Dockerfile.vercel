@@ -1,0 +1,41 @@
+# Build context is the repo root (Vercel builds this from the project root
+# regardless of the service's "root" in vercel.json) because this service
+# imports @platform/* workspace packages that live outside its own directory.
+#
+# Why a container at all: Vercel's Function bundler breaks Prisma both ways —
+# engineType "library" hits `__dirname is not defined` under the ESM rewrite,
+# and engineType "client" (wasm query compiler) can't get its .wasm asset
+# into the bundle even with `includeFiles` (tried, confirmed dead twice).
+# Running the real build output in a container skips the bundler entirely.
+FROM node:20-slim
+
+WORKDIR /repo
+
+# Install deps for the whole workspace (services import each other's
+# workspace packages, so npm needs the full lockfile/workspace tree).
+COPY package.json package-lock.json ./
+COPY apps/gateway/package.json apps/gateway/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
+COPY packages/http-client/package.json packages/http-client/package.json
+COPY services/identity-service/package.json services/identity-service/package.json
+COPY services/inventory-service/package.json services/inventory-service/package.json
+COPY services/purchasing-service/package.json services/purchasing-service/package.json
+COPY services/recipes-service/package.json services/recipes-service/package.json
+COPY services/notifications-service/package.json services/notifications-service/package.json
+COPY services/reporting-service/package.json services/reporting-service/package.json
+RUN npm ci
+
+# Now bring in the actual source and build.
+COPY . .
+RUN npm run build:shared
+WORKDIR /repo/services/identity-service
+RUN npx prisma generate
+RUN npm run build
+
+# Vercel's container runtime routes to port 80 by default (overridable via
+# the PORT env var in project settings). This service reads IDENTITY_PORT
+# (see src/config.ts), so pin it to match rather than plumb a second var.
+ENV IDENTITY_PORT=80
+
+CMD ["node", "dist/server.js"]

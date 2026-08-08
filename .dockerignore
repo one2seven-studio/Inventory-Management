@@ -1,0 +1,20 @@
+# Keep the container build context small (Vercel: 500MB/layer, 15GB/image).
+# COPY . . in Dockerfile.vercel pulls the repo root, so trim everything
+# each service doesn't need to build itself.
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.next/
+**/.next/
+build/
+**/build/
+*.tsbuildinfo
+.git/
+.vercel/
+.env
+.env.*
+services/*/src/generated/
+packages/db/
+coverage/
+*.log
