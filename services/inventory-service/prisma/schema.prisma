@@ -1,0 +1,171 @@
+// Inventory service's own database (items, locations, stock ledger, batches,
+// wastage, transfers). Owned exclusively by this service.
+generator client {
+  provider = "prisma-client-js"
+  // See identity-service/prisma/schema.prisma for why this isn't the
+  // default hoisted node_modules/@prisma/client location.
+  output = "../src/generated/prisma"
+  // The default native query engine loads a binary via code that isn't
+  // bundler-safe (breaks with "__dirname is not defined" under Vercel's
+  // Node.js Function bundler). The Neon driver adapter (see db/client.ts)
+  // replaces it with Neon's WebSocket driver — no native engine to load.
+  // multiSchema + @@schema(...) below replaces the old `?schema=inventory`
+  // connection-string convention, which the driver adapter doesn't honor
+  // and Neon's pooled endpoint won't accept as a startup parameter either.
+  // "client" = the Rust-free query compiler. The default "library" engine
+  // ships a native .node binary whose loader resolves its own path via
+  // `eval("__dirname")`, which is undefined once Vercel's Function bundler
+  // converts this to ESM — that's the "__dirname is not defined" crash.
+  // driverAdapters/queryCompiler/multiSchema are all stable as of 6.16, so
+  // they no longer belong in previewFeatures.
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("INVENTORY_DATABASE_URL")
+  schemas  = ["inventory"]
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  storageAreas StorageArea[]
+
+  @@schema("inventory")
+}
+
+model StorageArea {
+  id         String @id @default(cuid())
+  locationId String
+  name       String
+  type       String
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model Item {
+  id                     String   @id @default(cuid())
+  sku                    String   @unique
+  name                   String
+  category               String
+  subCategory            String?
+  description            String?
+  imageUrl               String?
+  barcode                String?  @unique
+  purchaseUom            String
+  stockUom               String
+  recipeUom              String
+  purchaseToStockFactor  Float
+  stockToRecipeFactor    Float
+  isPerishable           Boolean  @default(false)
+  defaultShelfLifeDays   Int?
+  lastPurchasePrice      Float?
+  averageCost            Float?
+  status                 String   @default("ACTIVE")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  stockLevels  StockLevel[]
+  transactions StockTransaction[]
+  batches      Batch[]
+  wastageLogs  WastageLog[]
+
+  @@schema("inventory")
+}
+
+// On-hand balance is tracked per item+location (not per storage sub-area —
+// storage area is captured as descriptive metadata on individual
+// transactions instead, keeping the ledger's unique-balance key simple).
+model StockLevel {
+  id             String @id @default(cuid())
+  itemId         String
+  locationId     String
+  quantityOnHand Float  @default(0)
+  parLevel       Float?
+  minLevel       Float?
+  maxLevel       Float?
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, locationId])
+  @@schema("inventory")
+}
+
+model StockTransaction {
+  id             String   @id @default(cuid())
+  itemId         String
+  locationId     String
+  storageAreaId  String?
+  type           String
+  quantity       Float
+  runningBalance Float
+  unitCost       Float?
+  batchId        String?
+  referenceType  String?
+  referenceId    String?
+  reasonCode     String?
+  userId         String
+  createdAt      DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model Batch {
+  id                String    @id @default(cuid())
+  itemId            String
+  locationId        String
+  batchNumber       String
+  expiryDate        DateTime?
+  receivedQuantity  Float
+  remainingQuantity Float
+  unitCost          Float
+  createdAt         DateTime  @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model WastageLog {
+  id         String   @id @default(cuid())
+  itemId     String
+  locationId String
+  station    String?
+  quantity   Float
+  reason     String
+  costImpact Float
+  photoUrl   String?
+  userId     String
+  createdAt  DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
+}
+
+model StockTransferRequest {
+  id                     String    @id @default(cuid())
+  itemId                 String
+  sourceLocationId       String
+  destinationLocationId  String
+  requestedQuantity      Float
+  dispatchedQuantity     Float?
+  receivedQuantity       Float?
+  status                 String    @default("REQUESTED")
+  requestedByUserId      String
+  approvedByUserId       String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@schema("inventory")
+}

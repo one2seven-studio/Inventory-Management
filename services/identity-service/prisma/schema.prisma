@@ -1,0 +1,82 @@
+// Identity service's own database. Owned exclusively by this service —
+// no other service reads or writes here directly.
+generator client {
+  provider = "prisma-client-js"
+  // Each service generates its client into its own folder instead of the
+  // hoisted npm-workspace node_modules/@prisma/client — with several
+  // services sharing one workspace root, generating to the default shared
+  // location would let the last "prisma generate" silently overwrite every
+  // other service's client with its own schema.
+  output = "../src/generated/prisma"
+  // The default native query engine loads a binary via code that isn't
+  // bundler-safe (breaks with "__dirname is not defined" under Vercel's
+  // Node.js Function bundler). The Neon driver adapter (see db/client.ts)
+  // replaces it with Neon's WebSocket driver — no native engine to load.
+  // multiSchema + @@schema(...) below replaces the old `?schema=identity`
+  // connection-string convention, which the driver adapter doesn't honor
+  // and Neon's pooled endpoint won't accept as a startup parameter either.
+  // "client" = the Rust-free query compiler. The default "library" engine
+  // ships a native .node binary whose loader resolves its own path via
+  // `eval("__dirname")`, which is undefined once Vercel's Function bundler
+  // converts this to ESM — that's the "__dirname is not defined" crash.
+  // driverAdapters/queryCompiler/multiSchema are all stable as of 6.16, so
+  // they no longer belong in previewFeatures.
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("IDENTITY_DATABASE_URL")
+  schemas  = ["identity"]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roles         UserRole[]
+  locations     UserLocation[]
+  refreshTokens RefreshToken[]
+
+  @@schema("identity")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  role   String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@schema("identity")
+}
+
+model UserLocation {
+  id         String @id @default(cuid())
+  userId     String
+  locationId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+  @@schema("identity")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("identity")
+}
