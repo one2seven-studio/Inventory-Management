@@ -15,6 +15,7 @@ export type StorageAreaType = z.infer<typeof storageAreaTypeSchema>;
 
 export const locationSchema = z.object({
   id: z.string(),
+  restaurantId: z.string(),
   name: z.string(),
   type: locationTypeSchema,
   address: z.string().nullable(),

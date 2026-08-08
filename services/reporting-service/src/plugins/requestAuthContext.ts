@@ -9,15 +9,18 @@ import { AUTH_HEADER, type Role } from "@platform/contracts";
 export interface RequestAuthContext {
   userId: string | null;
   roles: Role[];
+  restaurantId: string | null;
 }
 
 export function getRequestAuthContext(request: FastifyRequest): RequestAuthContext {
   const userId = request.headers[AUTH_HEADER.USER_ID];
   const rolesHeader = request.headers[AUTH_HEADER.ROLES];
   const roles = typeof rolesHeader === "string" && rolesHeader.length > 0 ? (rolesHeader.split(",") as Role[]) : [];
+  const restaurantId = request.headers[AUTH_HEADER.RESTAURANT_ID];
   return {
     userId: typeof userId === "string" ? userId : null,
     roles,
+    restaurantId: typeof restaurantId === "string" && restaurantId.length > 0 ? restaurantId : null,
   };
 }
 

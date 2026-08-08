@@ -16,11 +16,12 @@ services/
   notifications-service/  PAR/expiry alert detection, in-app notification center      :8005
   reporting-service/      dashboard KPIs, food-cost/spend/valuation reports           :8006
 packages/
-  contracts/              shared Zod schemas + TS types — the only code shared between services
+  contracts/              shared Zod schemas + TS types — the only DTO code shared between services
   http-client/            tiny typed fetch wrapper used by every service/app to call another
+  db/                     single shared Prisma schema + client — every service imports @platform/db
 ```
 
-Every backend service except `reporting-service` owns its own Postgres **schema** inside one shared Neon database (`?schema=<service>` on its own `<SERVICE>_DATABASE_URL` in the root `.env`) — no service reads another's tables directly, only HTTP. `reporting-service` is fully stateless: it has no database of its own and computes everything by fanning out, in parallel, to the other services' read endpoints on every request. `notifications-service` persists its own notification rows, but the low-stock/expiry *detection* that creates them is itself a poller over inventory-service's read endpoints.
+Every backend service except `reporting-service` owns its own Postgres **schema** inside one shared Neon database — no service reads another's tables directly, only HTTP. There's one Prisma schema and one generated client for the whole platform (`packages/db`, one `DATABASE_URL` in the root `.env`); Prisma's `multiSchema` preview feature + `@@schema("identity" | "inventory" | ...)` on every model is what keeps each service's tables in its own Postgres schema, not separate connections. `reporting-service` is fully stateless: it has no database of its own and computes everything by fanning out, in parallel, to the other services' read endpoints on every request. `notifications-service` persists its own notification rows, but the low-stock/expiry *detection* that creates them is itself a poller over inventory-service's read endpoints.
 
 **Trust boundary**: the gateway is the only publicly reachable entry point. It verifies the caller's JWT (issued by identity-service) and injects `x-user-id` / `x-user-email` / `x-user-roles` / `x-user-locations` headers on the proxied request, stripping any client-supplied versions of those headers first — so every downstream service can trust them unconditionally without re-verifying the token itself.
 
@@ -29,24 +30,26 @@ Every backend service except `reporting-service` owns its own Postgres **schema*
 ## Prerequisites
 
 - Node 20+, npm 10+
-- A Postgres database reachable from this machine (the running instance was built against Neon; any Postgres 14+ works — each service creates its own schema on first `db:push`, nothing needs pre-creating)
+- A Postgres database reachable from this machine (the running instance was built against Neon; any Postgres 14+ works — `db:push` creates every service's Postgres schema on first run, nothing needs pre-creating)
 
 ## First-time setup
 
 ```bash
 npm install
 
-# Shared packages must be compiled before anything imports them
+# Shared packages must be compiled before anything imports them — this also
+# runs `prisma generate` for packages/db first, since its build depends on
+# the generated client existing.
 npm run build:shared
 
 # One .env at the repo root — every app/service reads from it, no per-service
 # .env files.
 cp .env.example .env
-# edit the *_DATABASE_URL vars — same Postgres connection string across every
-# service, only the &schema=<name> query param differs
+# edit DATABASE_URL — one Postgres connection for every service; multiSchema
+# + @@schema(...) in packages/db/prisma/schema.prisma keeps each service's
+# tables in their own Postgres schema
 
-npm run db:generate    # runs --workspaces --if-present, skips reporting-service/gateway/web automatically
-npm run db:push        # creates each service's schema in your Postgres database
+npm run db:push        # creates every service's Postgres schema, from the one shared schema.prisma
 
 # identity-service and inventory-service ship a seed script:
 npm run db:seed -w services/identity-service    # owner@restaurant.test / Owner123!

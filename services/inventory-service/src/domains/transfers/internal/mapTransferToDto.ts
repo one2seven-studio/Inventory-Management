@@ -1,5 +1,5 @@
 import type { StockTransferRequest, TransferStatus } from "@platform/contracts";
-import type { StockTransferRequest as PrismaTransfer } from "../../../generated/prisma/index.js";
+import type { StockTransferRequest as PrismaTransfer } from "@platform/db";
 
 export function mapTransferToDto(transfer: PrismaTransfer): StockTransferRequest {
   return {

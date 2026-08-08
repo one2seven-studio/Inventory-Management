@@ -1,5 +1,5 @@
 import type { Batch } from "@platform/contracts";
-import type { Batch as PrismaBatch } from "../../../generated/prisma/index.js";
+import type { Batch as PrismaBatch } from "@platform/db";
 
 export function mapBatchToDto(batch: PrismaBatch): Batch {
   return {

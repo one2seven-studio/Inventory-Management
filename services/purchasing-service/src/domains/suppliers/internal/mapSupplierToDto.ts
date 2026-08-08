@@ -1,5 +1,5 @@
 import type { Supplier } from "@platform/contracts";
-import type { Supplier as PrismaSupplier } from "../../../generated/prisma/index.js";
+import type { Supplier as PrismaSupplier } from "@platform/db";
 
 export function mapSupplierToDto(supplier: PrismaSupplier): Supplier {
   return {

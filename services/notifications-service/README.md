@@ -4,11 +4,10 @@ In-app notification center plus PAR-level low-stock and expiry-window alert dete
 
 ## Run
 
-Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file.
+Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file. The Prisma schema/client is shared across every service — see `packages/db`.
 
 ```bash
-npm run db:generate -w services/notifications-service
-npm run db:push -w services/notifications-service
+npm run db:push -w packages/db
 npm run dev -w services/notifications-service   # http://localhost:8005
 ```
 
@@ -28,4 +27,4 @@ A background sweep (`src/alertScheduler.ts`) runs immediately on boot and then e
 
 ## Database
 
-Shares the platform's one Postgres database, isolated in its own `notifications` schema via `?schema=notifications` on `NOTIFICATIONS_DATABASE_URL` — no cross-service DB access, only HTTP.
+Shares the platform's one Postgres database and one Prisma schema/client (`packages/db`), isolated in its own `notifications` schema via `multiSchema` + `@@schema(...)` — no cross-service DB access, only HTTP.

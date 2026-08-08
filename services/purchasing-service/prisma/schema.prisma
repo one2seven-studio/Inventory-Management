@@ -5,11 +5,26 @@ generator client {
   // See identity-service/prisma/schema.prisma for why this isn't the
   // default hoisted node_modules/@prisma/client location.
   output = "../src/generated/prisma"
+  // The default native query engine loads a binary via code that isn't
+  // bundler-safe (breaks with "__dirname is not defined" under Vercel's
+  // Node.js Function bundler). The Neon driver adapter (see db/client.ts)
+  // replaces it with Neon's WebSocket driver — no native engine to load.
+  // multiSchema + @@schema(...) below replaces the old `?schema=purchasing`
+  // connection-string convention, which the driver adapter doesn't honor
+  // and Neon's pooled endpoint won't accept as a startup parameter either.
+  // "client" = the Rust-free query compiler. The default "library" engine
+  // ships a native .node binary whose loader resolves its own path via
+  // `eval("__dirname")`, which is undefined once Vercel's Function bundler
+  // converts this to ESM — that's the "__dirname is not defined" crash.
+  // driverAdapters/queryCompiler/multiSchema are all stable as of 6.16, so
+  // they no longer belong in previewFeatures.
+  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("PURCHASING_DATABASE_URL")
+  schemas  = ["purchasing"]
 }
 
 model Supplier {
@@ -28,6 +43,8 @@ model Supplier {
 
   itemPrices     SupplierItemPrice[]
   purchaseOrders PurchaseOrder[]
+
+  @@schema("purchasing")
 }
 
 // PRD §3.2 — item-supplier price list with a preferred supplier per item.
@@ -49,6 +66,7 @@ model SupplierItemPrice {
 
   @@unique([supplierId, itemId])
   @@index([itemId])
+  @@schema("purchasing")
 }
 
 // PRD §3.3 — Draft -> Pending Approval -> Sent -> Confirmed -> Partially
@@ -73,6 +91,7 @@ model PurchaseOrder {
   @@index([status])
   @@index([locationId])
   @@index([supplierId])
+  @@schema("purchasing")
 }
 
 model PurchaseOrderLine {
@@ -87,6 +106,7 @@ model PurchaseOrderLine {
   grnLines      GrnLine[]
 
   @@index([purchaseOrderId])
+  @@schema("purchasing")
 }
 
 // Immutable append-only status trail backing `PurchaseOrder.statusHistory`
@@ -103,6 +123,7 @@ model PurchaseOrderStatusEvent {
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
+  @@schema("purchasing")
 }
 
 // PRD §3.4 — Goods Receipt Note: received quantities + per-line discrepancy
@@ -120,6 +141,7 @@ model Grn {
   lines         GrnLine[]
 
   @@index([purchaseOrderId])
+  @@schema("purchasing")
 }
 
 model GrnLine {
@@ -138,4 +160,5 @@ model GrnLine {
   poLine PurchaseOrderLine @relation(fields: [poLineId], references: [id])
 
   @@index([grnId])
+  @@schema("purchasing")
 }

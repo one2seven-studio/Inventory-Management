@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/session/getCurrentUser";
 import { PoStatusBadge } from "@/components/purchaseOrders/PoStatusBadge";
 import { ApproveRejectForm } from "@/components/purchaseOrders/ApproveRejectForm";
 import { Table, Thead, Th, Tr, Td } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 const RECEIVABLE_STATUSES = ["SENT", "CONFIRMED", "PARTIALLY_RECEIVED"];
 const APPROVABLE_STATUSES = ["DRAFT", "PENDING_APPROVAL"];
@@ -61,14 +62,14 @@ export default async function PurchaseOrderDetailPage({ params }: { params: Prom
               <Td>{itemsById.get(line.itemId)?.name ?? line.itemId}</Td>
               <Td className="font-data-mono">{line.quantityOrdered}</Td>
               <Td className="font-data-mono">{line.quantityReceived}</Td>
-              <Td className="font-data-mono">${line.unitPrice.toFixed(2)}</Td>
-              <Td className="font-data-mono">${(line.quantityOrdered * line.unitPrice).toFixed(2)}</Td>
+              <Td className="font-data-mono">{formatCurrency(line.unitPrice)}</Td>
+              <Td className="font-data-mono">{formatCurrency(line.quantityOrdered * line.unitPrice)}</Td>
             </Tr>
           ))}
         </tbody>
       </Table>
       <p className="text-right text-sm font-medium text-on-surface">
-        Total: <span className="font-data-mono">${po.totalAmount.toFixed(2)}</span>
+        Total: <span className="font-data-mono">{formatCurrency(po.totalAmount)}</span>
       </p>
 
       {canApprove && APPROVABLE_STATUSES.includes(po.status) ? <ApproveRejectForm poId={po.id} /> : null}

@@ -31,7 +31,12 @@ export async function proxyRequest(
 
   const headers = new Headers();
   for (const [key, value] of Object.entries(request.headers)) {
-    if (typeof value === "string" && !HOP_BY_HOP_HEADERS.has(key.toLowerCase()) && !key.toLowerCase().startsWith("x-user-")) {
+    const lowerKey = key.toLowerCase();
+    // Strips any client-supplied x-user-*/x-restaurant-id — a caller could
+    // otherwise spoof its own trusted identity headers, since only the ones
+    // set below (derived from the gateway's own verified JWT) may be trusted.
+    const isSpoofableIdentityHeader = lowerKey.startsWith("x-user-") || lowerKey === AUTH_HEADER.RESTAURANT_ID;
+    if (typeof value === "string" && !HOP_BY_HOP_HEADERS.has(lowerKey) && !isSpoofableIdentityHeader) {
       headers.set(key, value);
     }
   }
@@ -41,6 +46,9 @@ export async function proxyRequest(
     headers.set(AUTH_HEADER.EMAIL, authContext.email);
     headers.set(AUTH_HEADER.ROLES, authContext.roles.join(","));
     headers.set(AUTH_HEADER.LOCATION_IDS, authContext.locationIds.join(","));
+    if (authContext.restaurantId) {
+      headers.set(AUTH_HEADER.RESTAURANT_ID, authContext.restaurantId);
+    }
   }
 
   const hasBody = !["GET", "HEAD"].includes(request.method);

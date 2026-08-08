@@ -11,9 +11,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build:shared": "npm run build -w packages/contracts -w packages/http-client",
+    "build:shared": "npm run db:generate -w packages/db && npm run build -w packages/contracts -w packages/http-client -w packages/db",
     "predev": "npm run build:shared",
     "predev:core": "npm run build:shared",
+    "prebuild": "npm run build:shared",
     "dev": "concurrently -n web,gateway,identity,inventory,purchasing,recipes,notifications,reporting -c blue,magenta,green,yellow,cyan,white,gray,red \"npm run dev -w apps/web\" \"npm run dev -w apps/gateway\" \"npm run dev -w services/identity-service\" \"npm run dev -w services/inventory-service\" \"npm run dev -w services/purchasing-service\" \"npm run dev -w services/recipes-service\" \"npm run dev -w services/notifications-service\" \"npm run dev -w services/reporting-service\"",
     "dev:core": "concurrently -n web,gateway,identity,inventory -c blue,magenta,green,yellow \"npm run dev -w apps/web\" \"npm run dev -w apps/gateway\" \"npm run dev -w services/identity-service\" \"npm run dev -w services/inventory-service\"",
     "build": "npm run build --workspaces --if-present",
@@ -23,10 +24,11 @@
     "db:push": "npm run db:push --workspaces --if-present",
     "db:seed": "npm run db:seed --workspaces --if-present"
   },
-  "devDependencies": {
+  "dependencies": {
     "concurrently": "^9.0.1",
     "dotenv-cli": "^7.4.2"
   },
+  "devDependencies": {},
   "allowScripts": {
     "@prisma/client@5.22.0": true,
     "@prisma/engines@5.22.0": true,

@@ -1,5 +1,5 @@
 import type { StockLevel, StockTransaction, StockTransactionType } from "@platform/contracts";
-import type { StockLevel as PrismaStockLevel, StockTransaction as PrismaStockTransaction } from "../../../generated/prisma/index.js";
+import type { StockLevel as PrismaStockLevel, StockTransaction as PrismaStockTransaction } from "@platform/db";
 
 export function mapStockLevelToDto(level: PrismaStockLevel): StockLevel {
   return {

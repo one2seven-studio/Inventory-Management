@@ -16,8 +16,8 @@ next-env.d.ts
 .env.*
 .env.example
 
-# generated Prisma clients (one per service — see prisma/schema.prisma output path)
-services/*/src/generated/
+# generated Prisma client (single shared schema — see packages/db/prisma/schema.prisma)
+packages/db/generated/
 
 # databases (per-service SQLite dev DBs)
 *.db

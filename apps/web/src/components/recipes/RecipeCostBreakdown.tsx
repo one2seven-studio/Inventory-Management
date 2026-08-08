@@ -1,6 +1,7 @@
 import type { RecipeCost } from "@platform/contracts";
 import { Card } from "@/components/ui/Card";
 import { Table, Thead, Th, Tr, Td } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function RecipeCostBreakdown({ cost }: { cost: RecipeCost }) {
   return (
@@ -8,12 +9,12 @@ export function RecipeCostBreakdown({ cost }: { cost: RecipeCost }) {
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <p className="label-caps text-on-surface-variant">Plate cost</p>
-          <p className="mt-1 font-headline text-xl font-bold text-on-surface">${cost.plateCost.toFixed(2)}</p>
+          <p className="mt-1 font-headline text-xl font-bold text-on-surface">{formatCurrency(cost.plateCost)}</p>
         </Card>
         <Card>
           <p className="label-caps text-on-surface-variant">Selling price</p>
           <p className="mt-1 font-headline text-xl font-bold text-on-surface">
-            {cost.sellingPrice != null ? `$${cost.sellingPrice.toFixed(2)}` : "—"}
+            {cost.sellingPrice != null ? formatCurrency(cost.sellingPrice) : "—"}
           </p>
         </Card>
         <Card>
@@ -40,8 +41,8 @@ export function RecipeCostBreakdown({ cost }: { cost: RecipeCost }) {
               <Td className="font-data-mono">
                 {line.quantity} {line.unit}
               </Td>
-              <Td className="font-data-mono">${line.unitCost.toFixed(2)}</Td>
-              <Td className="font-data-mono">${line.lineCost.toFixed(2)}</Td>
+              <Td className="font-data-mono">{formatCurrency(line.unitCost)}</Td>
+              <Td className="font-data-mono">{formatCurrency(line.lineCost)}</Td>
             </Tr>
           ))}
         </tbody>

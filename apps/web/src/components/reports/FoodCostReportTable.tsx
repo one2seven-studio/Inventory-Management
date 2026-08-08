@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { FoodCostReportLine } from "@platform/contracts";
 import { BookOpen } from "lucide-react";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function FoodCostReportTable({ lines }: { lines: FoodCostReportLine[] }) {
   if (lines.length === 0) {
@@ -33,8 +34,8 @@ export function FoodCostReportTable({ lines }: { lines: FoodCostReportLine[] }) 
         {lines.map((line) => (
           <Tr key={line.recipeId}>
             <Td>{line.recipeName}</Td>
-            <Td className="font-data-mono">${line.plateCost.toFixed(2)}</Td>
-            <Td className="font-data-mono">{line.sellingPrice != null ? `$${line.sellingPrice.toFixed(2)}` : "—"}</Td>
+            <Td className="font-data-mono">{formatCurrency(line.plateCost)}</Td>
+            <Td className="font-data-mono">{line.sellingPrice != null ? formatCurrency(line.sellingPrice) : "—"}</Td>
             <Td className="font-data-mono">{line.foodCostPercent != null ? `${line.foodCostPercent.toFixed(1)}%` : "—"}</Td>
           </Tr>
         ))}

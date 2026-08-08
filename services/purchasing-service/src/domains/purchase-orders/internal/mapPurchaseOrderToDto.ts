@@ -3,7 +3,7 @@ import type {
   PurchaseOrder as PrismaPurchaseOrder,
   PurchaseOrderLine as PrismaPurchaseOrderLine,
   PurchaseOrderStatusEvent as PrismaPurchaseOrderStatusEvent,
-} from "../../../generated/prisma/index.js";
+} from "@platform/db";
 
 export type PrismaPurchaseOrderWithRelations = PrismaPurchaseOrder & {
   lines: PrismaPurchaseOrderLine[];

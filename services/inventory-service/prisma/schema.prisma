@@ -5,11 +5,26 @@ generator client {
   // See identity-service/prisma/schema.prisma for why this isn't the
   // default hoisted node_modules/@prisma/client location.
   output = "../src/generated/prisma"
+  // The default native query engine loads a binary via code that isn't
+  // bundler-safe (breaks with "__dirname is not defined" under Vercel's
+  // Node.js Function bundler). The Neon driver adapter (see db/client.ts)
+  // replaces it with Neon's WebSocket driver — no native engine to load.
+  // multiSchema + @@schema(...) below replaces the old `?schema=inventory`
+  // connection-string convention, which the driver adapter doesn't honor
+  // and Neon's pooled endpoint won't accept as a startup parameter either.
+  // "client" = the Rust-free query compiler. The default "library" engine
+  // ships a native .node binary whose loader resolves its own path via
+  // `eval("__dirname")`, which is undefined once Vercel's Function bundler
+  // converts this to ESM — that's the "__dirname is not defined" crash.
+  // driverAdapters/queryCompiler/multiSchema are all stable as of 6.16, so
+  // they no longer belong in previewFeatures.
+  engineType = "client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("INVENTORY_DATABASE_URL")
+  schemas  = ["inventory"]
 }
 
 model Location {
@@ -21,6 +36,8 @@ model Location {
   createdAt DateTime @default(now())
 
   storageAreas StorageArea[]
+
+  @@schema("inventory")
 }
 
 model StorageArea {
@@ -30,6 +47,8 @@ model StorageArea {
   type       String
 
   location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
 }
 
 model Item {
@@ -58,6 +77,8 @@ model Item {
   transactions StockTransaction[]
   batches      Batch[]
   wastageLogs  WastageLog[]
+
+  @@schema("inventory")
 }
 
 // On-hand balance is tracked per item+location (not per storage sub-area —
@@ -75,6 +96,7 @@ model StockLevel {
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, locationId])
+  @@schema("inventory")
 }
 
 model StockTransaction {
@@ -94,6 +116,8 @@ model StockTransaction {
   createdAt      DateTime @default(now())
 
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
 }
 
 model Batch {
@@ -108,6 +132,8 @@ model Batch {
   createdAt         DateTime  @default(now())
 
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
 }
 
 model WastageLog {
@@ -123,6 +149,8 @@ model WastageLog {
   createdAt  DateTime @default(now())
 
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@schema("inventory")
 }
 
 model StockTransferRequest {
@@ -138,4 +166,6 @@ model StockTransferRequest {
   approvedByUserId       String?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
+
+  @@schema("inventory")
 }

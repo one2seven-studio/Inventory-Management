@@ -31,6 +31,10 @@ export function LoginForm() {
           className="w-full py-2"
         />
       </div>
+      <label className="flex items-center gap-2 text-sm text-on-surface-variant">
+        <input type="checkbox" name="rememberMe" className="accent-primary" />
+        Remember me
+      </label>
       {state.error ? <p className="text-sm text-danger">{state.error}</p> : null}
       <Button type="submit" pending={isPending} className="w-full py-2">
         {isPending ? "Signing in…" : "Sign in"}

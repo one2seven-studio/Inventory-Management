@@ -4,12 +4,10 @@ Users, roles (RBAC per PRD §3.16/§6), and JWT authentication. Owns its own Pos
 
 ## Run
 
-```bash
-Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file.
+Uses the root `.env` (`cp .env.example .env` at the repo root) — no per-service .env file. The Prisma schema/client is shared across every service — see `packages/db`.
 
 ```bash
-npm run db:generate -w services/identity-service
-npm run db:push -w services/identity-service
+npm run db:push -w packages/db
 npm run db:seed -w services/identity-service   # creates owner@restaurant.test / Owner123!
 npm run dev -w services/identity-service        # http://localhost:8001
 ```
@@ -24,4 +22,4 @@ npm run dev -w services/identity-service        # http://localhost:8001
 
 ## Database
 
-All services share one Postgres database, each isolated in its own schema namespace via `?schema=<service>` on `DATABASE_URL` (this service uses `identity`). No cross-service DB access — only HTTP.
+All services share one Postgres database and one Prisma schema/client (`packages/db`), each isolated in its own schema namespace via `multiSchema` + `@@schema(...)` (this service uses `identity`). No cross-service DB access — only HTTP.

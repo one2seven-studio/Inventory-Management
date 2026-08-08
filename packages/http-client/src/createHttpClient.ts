@@ -50,11 +50,23 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
 
   async function request<T>(method: string, path: string, options?: { query?: Record<string, string | number | boolean | undefined>; body?: unknown }): Promise<T> {
     const url = buildUrl(config.baseUrl, path, options?.query);
-    const response = await fetch(url, {
+    // Every call here carries live, per-caller-authorized data (auth token,
+    // active restaurant, ...) — Next.js's fetch Data Cache keys purely on
+    // URL+method, not headers, so without `cache: "no-store"` a request made
+    // under one session/restaurant can serve a cached response to a
+    // *different* one that later hits the exact same URL. Node's plain
+    // fetch (every backend service also uses this client) has no such cache
+    // to begin with, so this is a no-op there. Typed as an intersection —
+    // not inline on the fetch() call — because this package's tsconfig has
+    // no "DOM" lib and Node's ambient RequestInit doesn't declare `cache`,
+    // even though the runtime (both Node's fetch and Next's) accepts it.
+    const requestInit: RequestInit & { cache?: "no-store" } = {
       method,
       headers,
       body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+      cache: "no-store",
+    };
+    const response = await fetch(url, requestInit);
     return parseResponse<T>(response);
   }
 

@@ -2,76 +2,78 @@
     "services": {
         "web": {
             "root": "apps/web",
-            "framework": "nextjs"
+            "framework": "nextjs",
+            "buildCommand": "cd ../.. && npm run build:shared && cd apps/web && npm run build",
+            "bindings": [
+                { "type": "service", "service": "gateway", "format": "url", "env": "GATEWAY_URL" }
+            ]
+        },
+        "gateway": {
+            "root": "apps/gateway",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd apps/gateway && npm run build",
+            "bindings": [
+                { "type": "service", "service": "identity-service", "format": "url", "env": "IDENTITY_SERVICE_URL" },
+                { "type": "service", "service": "inventory-service", "format": "url", "env": "INVENTORY_SERVICE_URL" },
+                { "type": "service", "service": "purchasing-service", "format": "url", "env": "PURCHASING_SERVICE_URL" },
+                { "type": "service", "service": "recipes-service", "format": "url", "env": "RECIPES_SERVICE_URL" },
+                { "type": "service", "service": "notifications-service", "format": "url", "env": "NOTIFICATIONS_SERVICE_URL" },
+                { "type": "service", "service": "reporting-service", "format": "url", "env": "REPORTING_SERVICE_URL" }
+            ]
         },
         "identity-service": {
-            "root": "services/identity-service"
+            "root": "services/identity-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/identity-service && npm run build"
         },
         "inventory-service": {
-            "root": "services/inventory-service"
+            "root": "services/inventory-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/inventory-service && npm run build"
         },
         "notifications-service": {
-            "root": "services/notifications-service"
+            "root": "services/notifications-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/notifications-service && npm run build",
+            "bindings": [
+                { "type": "service", "service": "inventory-service", "format": "url", "env": "INVENTORY_SERVICE_URL" }
+            ]
         },
         "purchasing-service": {
-            "root": "services/purchasing-service"
+            "root": "services/purchasing-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/purchasing-service && npm run build",
+            "bindings": [
+                { "type": "service", "service": "inventory-service", "format": "url", "env": "INVENTORY_SERVICE_URL" }
+            ]
         },
         "recipes-service": {
-            "root": "services/recipes-service"
+            "root": "services/recipes-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/recipes-service && npm run build",
+            "bindings": [
+                { "type": "service", "service": "inventory-service", "format": "url", "env": "INVENTORY_SERVICE_URL" }
+            ]
         },
         "reporting-service": {
-            "root": "services/reporting-service"
+            "root": "services/reporting-service",
+            "entrypoint": "src/server.ts",
+            "buildCommand": "cd ../.. && npm run build:shared && cd services/reporting-service && npm run build",
+            "bindings": [
+                { "type": "service", "service": "inventory-service", "format": "url", "env": "INVENTORY_SERVICE_URL" },
+                { "type": "service", "service": "purchasing-service", "format": "url", "env": "PURCHASING_SERVICE_URL" },
+                { "type": "service", "service": "recipes-service", "format": "url", "env": "RECIPES_SERVICE_URL" }
+            ]
         }
     },
     "rewrites": [
         {
-            "source": "/api/notifications-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "notifications-service"
-            }
-        },
-        {
-            "source": "/api/purchasing-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "purchasing-service"
-            }
-        },
-        {
-            "source": "/api/inventory-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "inventory-service"
-            }
-        },
-        {
-            "source": "/api/reporting-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "reporting-service"
-            }
-        },
-        {
-            "source": "/api/identity-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "identity-service"
-            }
-        },
-        {
-            "source": "/api/recipes-service(/.*)?",
-            "destination": {
-                "type": "service",
-                "service": "recipes-service"
-            }
+            "source": "/api/(.*)",
+            "destination": { "service": "gateway" }
         },
         {
             "source": "/(.*)",
-            "destination": {
-                "type": "service",
-                "service": "web"
-            }
+            "destination": { "service": "web" }
         }
     ]
 }

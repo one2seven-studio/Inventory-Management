@@ -1,5 +1,6 @@
 import type { User } from "@platform/contracts";
 import { roleHasCapability } from "@platform/contracts";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Package,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 import { logoutAction } from "@/actions/logout";
 import { NavLinks, type NavItem } from "@/components/NavLinks";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { RestaurantSwitcher } from "@/components/restaurants/RestaurantSwitcher";
 
 const navIcon = (Icon: LucideIcon) => <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
 
@@ -52,28 +55,45 @@ function initials(name: string): string {
 
 export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
   const navItems = getNavItems(user);
+  const canManageRestaurants = user.roles.some((role) => roleHasCapability(role, "MANAGE_RESTAURANTS"));
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="flex flex-col justify-between border-b border-outline-variant bg-surface-container-low p-4 md:h-screen md:w-60 md:border-b-0 md:border-r">
         <div>
-          <div className="mb-6 flex items-center gap-2 px-1">
-            <Box className="h-5 w-5 text-primary" strokeWidth={2.5} aria-hidden="true" />
-            <div>
-              <p className="font-headline text-sm font-bold tracking-tight text-on-surface">Smart Inventory</p>
-              <p className="label-caps text-on-surface-variant">Restaurant Ops</p>
+          <div className="mb-3 flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-primary" strokeWidth={2.5} aria-hidden="true" />
+              <div>
+                <p className="font-headline text-sm font-bold tracking-tight text-on-surface">Smart Inventory</p>
+                <p className="label-caps text-on-surface-variant">Restaurant Ops</p>
+              </div>
             </div>
+            <ThemeToggle />
+          </div>
+          <div className="mb-6">
+            <RestaurantSwitcher
+              restaurants={user.restaurants}
+              activeRestaurantId={user.restaurantId ?? ""}
+              canManageRestaurants={canManageRestaurants}
+            />
           </div>
           <NavLinks items={navItems} />
         </div>
         <div className="mt-6 flex items-center gap-2 border-t border-outline-variant pt-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-container-high font-data-mono text-xs font-bold text-primary">
-            {initials(user.name)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-on-surface">{user.name}</p>
-            <p className="truncate text-xs text-on-surface-variant">{user.roles.join(", ")}</p>
-          </div>
+          <Link
+            href="/profile"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-surface-container-high"
+            title="Profile settings"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-container-high font-data-mono text-xs font-bold text-primary">
+              {initials(user.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-on-surface">{user.name}</p>
+              <p className="truncate text-xs text-on-surface-variant">{user.roles.join(", ")}</p>
+            </div>
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"
