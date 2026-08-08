@@ -2,7 +2,12 @@
 
 /* Design system: "Kinetic Amber" — minimalist-industrial, data-dense, mono-for-data.
    Light values are this app's own extrapolation (the source design only specified a
-   dark theme) — same structural roles, recalibrated for contrast on a light ground. */
+   dark theme) — same structural roles, recalibrated for contrast on a light ground.
+
+   Light is the unconditional default (no bare :root, no attribute needed) — this
+   app does not auto-switch off `prefers-color-scheme`. Dark only activates via the
+   explicit `data-theme="dark"` attribute set by ThemeToggle (see app/layout.tsx for
+   the no-flash inline script that applies a saved choice before first paint). */
 :root {
   --background: #fafaf9;
   --surface-container-low: #f5f4f2;
@@ -55,36 +60,36 @@
   --font-data-mono: var(--font-data-mono), monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #121414;
-    --surface-container-low: #1a1c1c;
-    --surface-container: #1e2020;
-    --surface-container-high: #282a2b;
-    --surface-container-highest: #333535;
-    --on-surface: #e2e2e2;
-    --on-surface-variant: #b0a696;
-    --outline: #6e6252;
-    --outline-variant: #37393a;
+:root[data-theme="dark"] {
+  --background: #121414;
+  --surface-container-low: #1a1c1c;
+  --surface-container: #1e2020;
+  --surface-container-high: #282a2b;
+  --surface-container-highest: #333535;
+  --on-surface: #e2e2e2;
+  --on-surface-variant: #b0a696;
+  --outline: #6e6252;
+  --outline-variant: #37393a;
 
-    --primary: #ffb300;
-    --on-primary: #2b1c00;
-    --primary-container: #ffb300;
-    --on-primary-container: #2b1c00;
+  --primary: #ffb300;
+  --on-primary: #2b1c00;
+  --primary-container: #ffb300;
+  --on-primary-container: #2b1c00;
 
-    --success: #4ade80;
-    --success-container: #0f2e1c;
-    --warning: #fbbf24;
-    --warning-container: #3a2c05;
-    --danger: #fb7185;
-    --danger-container: #3f0d16;
-  }
+  --success: #4ade80;
+  --success-container: #0f2e1c;
+  --warning: #fbbf24;
+  --warning-container: #3a2c05;
+  --danger: #fb7185;
+  --danger-container: #3f0d16;
 }
 
 body {
   background: var(--background);
   color: var(--on-surface);
   font-family: var(--font-body), sans-serif;
+  /* Smooth color-scheme swap when ThemeToggle flips data-theme. */
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 h1,

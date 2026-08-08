@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { logoutAction } from "@/actions/logout";
 import { NavLinks, type NavItem } from "@/components/NavLinks";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navIcon = (Icon: LucideIcon) => <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
 
@@ -57,12 +58,15 @@ export function AppShell({ user, children }: { user: User; children: React.React
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="flex flex-col justify-between border-b border-outline-variant bg-surface-container-low p-4 md:h-screen md:w-60 md:border-b-0 md:border-r">
         <div>
-          <div className="mb-6 flex items-center gap-2 px-1">
-            <Box className="h-5 w-5 text-primary" strokeWidth={2.5} aria-hidden="true" />
-            <div>
-              <p className="font-headline text-sm font-bold tracking-tight text-on-surface">Smart Inventory</p>
-              <p className="label-caps text-on-surface-variant">Restaurant Ops</p>
+          <div className="mb-6 flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-primary" strokeWidth={2.5} aria-hidden="true" />
+              <div>
+                <p className="font-headline text-sm font-bold tracking-tight text-on-surface">Smart Inventory</p>
+                <p className="label-caps text-on-surface-variant">Restaurant Ops</p>
+              </div>
             </div>
+            <ThemeToggle />
           </div>
           <NavLinks items={navItems} />
         </div>

@@ -25,12 +25,21 @@ export const metadata: Metadata = {
   description: "Restaurant Inventory & Stock Management Platform",
 };
 
+// Light is the CSS default (bare :root in globals.css) — this only needs to
+// apply dark, and only when a returning visitor previously chose it via
+// ThemeToggle. Runs synchronously before first paint so there's no flash of
+// light-then-dark for those users; light-by-default visitors pay no cost.
+const NO_FLASH_THEME_SCRIPT = `try{if(localStorage.getItem("theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${headlineFont.variable} ${bodyFont.variable} ${monoFont.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col font-body">{children}</body>
     </html>
   );
