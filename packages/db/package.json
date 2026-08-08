@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "db:generate": "dotenv -e ../../.env -- prisma generate",
+    "db:generate": "prisma generate",
     "db:push": "dotenv -e ../../.env -- prisma db push"
   },
   "dependencies": {
