@@ -1,5 +1,6 @@
 import type { User } from "@platform/contracts";
 import { roleHasCapability } from "@platform/contracts";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Package,
@@ -80,13 +81,19 @@ export function AppShell({ user, children }: { user: User; children: React.React
           <NavLinks items={navItems} />
         </div>
         <div className="mt-6 flex items-center gap-2 border-t border-outline-variant pt-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-container-high font-data-mono text-xs font-bold text-primary">
-            {initials(user.name)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-on-surface">{user.name}</p>
-            <p className="truncate text-xs text-on-surface-variant">{user.roles.join(", ")}</p>
-          </div>
+          <Link
+            href="/profile"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 transition-colors hover:bg-surface-container-high"
+            title="Profile settings"
+          >
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-outline-variant bg-surface-container-high font-data-mono text-xs font-bold text-primary">
+              {initials(user.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-on-surface">{user.name}</p>
+              <p className="truncate text-xs text-on-surface-variant">{user.roles.join(", ")}</p>
+            </div>
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"

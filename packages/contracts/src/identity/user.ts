@@ -30,3 +30,16 @@ export const assignRolesInputSchema = z.object({
   roles: z.array(z.enum(ROLES)).min(1),
 });
 export type AssignRolesInput = z.infer<typeof assignRolesInputSchema>;
+
+/** Self-service profile edit — every field optional, only supplied ones change. */
+export const updateProfileInputSchema = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+export type UpdateProfileInput = z.infer<typeof updateProfileInputSchema>;
+
+export const changePasswordInputSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;
