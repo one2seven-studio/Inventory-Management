@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Recipe, RecipeCost } from "@platform/contracts";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function RecipesTable({ recipes, costsById }: { recipes: Recipe[]; costsById: Map<string, RecipeCost> }) {
   if (recipes.length === 0) {
@@ -32,7 +33,7 @@ export function RecipesTable({ recipes, costsById }: { recipes: Recipe[]; costsB
               <Td className="font-data-mono">
                 {recipe.yieldQuantity} {recipe.yieldUnit}
               </Td>
-              <Td className="font-data-mono">{cost ? `$${cost.plateCost.toFixed(2)}` : "—"}</Td>
+              <Td className="font-data-mono">{cost ? formatCurrency(cost.plateCost) : "—"}</Td>
               <Td className="font-data-mono">{cost?.foodCostPercent != null ? `${cost.foodCostPercent.toFixed(1)}%` : "—"}</Td>
             </Tr>
           );

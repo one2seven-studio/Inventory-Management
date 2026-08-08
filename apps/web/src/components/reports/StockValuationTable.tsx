@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { StockValuationReport } from "@platform/contracts";
 import { Warehouse } from "lucide-react";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function StockValuationTable({ report }: { report: StockValuationReport }) {
   if (report.lines.length === 0) {
@@ -40,15 +41,15 @@ export function StockValuationTable({ report }: { report: StockValuationReport }
               </span>
             </Td>
             <Td className="font-data-mono">{line.quantityOnHand}</Td>
-            <Td className="font-data-mono">${line.unitCost.toFixed(2)}</Td>
-            <Td className="font-data-mono">${line.totalValue.toFixed(2)}</Td>
+            <Td className="font-data-mono">{formatCurrency(line.unitCost)}</Td>
+            <Td className="font-data-mono">{formatCurrency(line.totalValue)}</Td>
           </Tr>
         ))}
       </tbody>
       <tfoot>
         <tr className="border-t border-outline-variant font-medium">
           <Td colSpan={4}>Grand total</Td>
-          <Td className="font-data-mono">${report.totalValue.toFixed(2)}</Td>
+          <Td className="font-data-mono">{formatCurrency(report.totalValue)}</Td>
         </tr>
       </tfoot>
     </Table>

@@ -1,10 +1,11 @@
 import type { DashboardSummary } from "@platform/contracts";
 import { Wallet, PieChart, TriangleAlert, Truck } from "lucide-react";
 import { StatTile } from "@/components/ui/StatTile";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function StatTiles({ summary }: { summary: DashboardSummary }) {
   const tiles = [
-    { label: "Stock value", value: `$${summary.stockValue.toFixed(2)}`, icon: Wallet },
+    { label: "Stock value", value: formatCurrency(summary.stockValue), icon: Wallet },
     {
       label: "Food cost %",
       value: summary.foodCostPercent != null ? `${summary.foodCostPercent.toFixed(1)}%` : "—",

@@ -3,6 +3,7 @@ import type { Item, WastageLog } from "@platform/contracts";
 import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function WastageTable({ logs, items }: { logs: WastageLog[]; items: Item[] }) {
   const itemsById = new Map(items.map((item) => [item.id, item]));
@@ -42,7 +43,7 @@ export function WastageTable({ logs, items }: { logs: WastageLog[]; items: Item[
             <Td>
               <Badge tone="danger">{log.reason.replaceAll("_", " ")}</Badge>
             </Td>
-            <Td className="font-data-mono">${log.costImpact.toFixed(2)}</Td>
+            <Td className="font-data-mono">{formatCurrency(log.costImpact)}</Td>
             <Td>{log.station ?? "—"}</Td>
             <Td className="text-xs text-on-surface-variant">{new Date(log.createdAt).toLocaleString()}</Td>
           </Tr>

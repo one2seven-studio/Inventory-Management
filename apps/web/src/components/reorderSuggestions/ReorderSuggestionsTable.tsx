@@ -7,6 +7,7 @@ import { CircleCheck } from "lucide-react";
 import { convertToPoAction, type ConvertToPoActionState } from "@/actions/reorderSuggestions/convertToPo";
 import { Button } from "@/components/ui/Button";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 const initialState: ConvertToPoActionState = {};
 
@@ -74,7 +75,7 @@ export function ReorderSuggestionsTable({
                   ? suppliersById.get(suggestion.preferredSupplierId)?.name ?? suggestion.preferredSupplierId
                   : "—"}
               </Td>
-              <Td className="font-data-mono">{suggestion.lastPrice != null ? `$${suggestion.lastPrice.toFixed(2)}` : "—"}</Td>
+              <Td className="font-data-mono">{suggestion.lastPrice != null ? formatCurrency(suggestion.lastPrice) : "—"}</Td>
             </Tr>
           ))}
         </tbody>

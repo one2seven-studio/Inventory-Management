@@ -1,6 +1,7 @@
 import type { Item, ItemStatus } from "@platform/contracts";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 const STATUS_TONE: Record<ItemStatus, BadgeTone> = {
   ACTIVE: "success",
@@ -33,7 +34,7 @@ export function ItemsTable({ items }: { items: Item[] }) {
             <Td className="font-medium">{item.name}</Td>
             <Td className="text-on-surface-variant">{item.category}</Td>
             <Td className="font-data-mono">{item.stockUom}</Td>
-            <Td className="font-data-mono">{item.averageCost != null ? `$${item.averageCost.toFixed(2)}` : "—"}</Td>
+            <Td className="font-data-mono">{item.averageCost != null ? formatCurrency(item.averageCost) : "—"}</Td>
             <Td>
               <Badge tone={item.isPerishable ? "warning" : "neutral"}>{item.isPerishable ? "Yes" : "No"}</Badge>
             </Td>

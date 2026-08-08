@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { DashboardSummary } from "@platform/contracts";
 import { Trash2 } from "lucide-react";
 import { Table, Thead, Th, Tr, Td, EmptyState } from "@/components/ui/Table";
+import { formatCurrency } from "@/lib/format/formatCurrency";
 
 export function TopWastageList({ items }: { items: DashboardSummary["topWastageItems"] }) {
   if (items.length === 0) {
@@ -31,7 +32,7 @@ export function TopWastageList({ items }: { items: DashboardSummary["topWastageI
         {items.map((item) => (
           <Tr key={item.itemId}>
             <Td>{item.itemName}</Td>
-            <Td className="font-data-mono">${item.costImpact.toFixed(2)}</Td>
+            <Td className="font-data-mono">{formatCurrency(item.costImpact)}</Td>
           </Tr>
         ))}
       </tbody>
