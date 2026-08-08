@@ -36,6 +36,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${headlineFont.variable} ${bodyFont.variable} ${monoFont.variable} h-full antialiased`}
+      // The no-flash theme script below sets data-theme on this element
+      // before React hydrates (reading localStorage, which only exists
+      // client-side) — the server never renders that attribute, so this
+      // one specific, expected mismatch needs to be told apart from a real
+      // hydration bug. Only suppresses the warning for *this* element's own
+      // attributes, not anything inside <body> — a real mismatch anywhere
+      // else still surfaces normally.
+      suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
