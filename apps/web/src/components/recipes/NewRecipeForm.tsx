@@ -12,9 +12,47 @@ const initialState: CreateRecipeActionState = {};
 
 const INGREDIENT_ROWS = 6;
 
+// Standard units always offered, even before any item/recipe references them.
+const COMMON_UNITS = [
+  "mg",
+  "g",
+  "kg",
+  "ml",
+  "l",
+  "piece",
+  "dozen",
+  "oz",
+  "lb",
+  "cup",
+  "tbsp",
+  "tsp",
+  "pack",
+  "box",
+  "bag",
+  "case",
+  "unit",
+  "plate",
+  "serving",
+  "portion",
+  "bowl",
+  "slice",
+];
+
 /** Ingredients can be a raw inventory item OR another sub-recipe — this select lists both. */
 export function NewRecipeForm({ items, subRecipes }: { items: Item[]; subRecipes: Recipe[] }) {
   const [state, formAction, isPending] = useActionState(createRecipeAction, initialState);
+
+  // Common baseline units, plus anything already in use anywhere in the system (every
+  // item's purchase/stock/recipe UoM and every sub-recipe's yield unit) that isn't
+  // already covered — so the ingredient row's unit picker never needs free-typed text.
+  const units = Array.from(
+    new Set(
+      COMMON_UNITS.concat(
+        items.flatMap((item) => [item.purchaseUom, item.stockUom, item.recipeUom]),
+        subRecipes.map((recipe) => recipe.yieldUnit)
+      )
+    )
+  ).sort();
 
   return (
     <Card as="form" action={formAction}>
@@ -29,7 +67,16 @@ export function NewRecipeForm({ items, subRecipes }: { items: Item[]; subRecipes
           <option value="SUB_RECIPE">Sub-recipe</option>
         </Select>
         <Input name="yieldQuantity" type="number" step="any" min={0} placeholder="Yield quantity" required />
-        <Input name="yieldUnit" placeholder="Yield unit" required />
+        <Select name="yieldUnit" required defaultValue="">
+          <option value="" disabled>
+            Yield unit
+          </option>
+          {units.map((unit) => (
+            <option key={unit} value={unit}>
+              {unit}
+            </option>
+          ))}
+        </Select>
         <Input name="sellingPrice" type="number" step="any" min={0} placeholder="Selling price (optional)" />
       </div>
 
@@ -55,7 +102,14 @@ export function NewRecipeForm({ items, subRecipes }: { items: Item[]; subRecipes
               </optgroup>
             </Select>
             <Input name="ingredientQuantity" type="number" step="any" min={0} placeholder="Quantity" />
-            <Input name="ingredientUnit" placeholder="Unit" />
+            <Select name="ingredientUnit" defaultValue="">
+              <option value="">Unit</option>
+              {units.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </Select>
           </div>
         ))}
       </div>
