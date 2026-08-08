@@ -10,5 +10,6 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenClaim
     email: payload.email,
     roles: payload.roles,
     locationIds: payload.locationIds,
+    restaurantId: payload.restaurantId ?? null,
   });
 }

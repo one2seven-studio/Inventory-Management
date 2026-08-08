@@ -10,23 +10,35 @@ export interface TokenPair {
   refreshToken: string;
 }
 
-export async function issueTokenPair(user: UserWithRelations): Promise<TokenPair> {
+export interface IssueTokenPairOptions {
+  /** The session's active restaurant — null if ambiguous (Owner, 2+ restaurants) or nonexistent yet (brand-new Owner). */
+  restaurantId: string | null;
+  /** Persistent login — see RefreshToken.rememberMe and config.rememberMeRefreshTokenTtlSeconds. */
+  rememberMe?: boolean;
+}
+
+export async function issueTokenPair(user: UserWithRelations, options: IssueTokenPairOptions): Promise<TokenPair> {
   const roles = user.roles.map((r) => r.role);
   const locationIds = user.locations.map((l) => l.locationId);
+  const { restaurantId, rememberMe = false } = options;
 
   const accessToken = await signAccessToken({
     sub: user.id,
     email: user.email,
     roles,
     locationIds,
+    restaurantId,
   });
 
   const refreshToken = generateOpaqueToken();
+  const ttlSeconds = rememberMe ? config.rememberMeRefreshTokenTtlSeconds : config.refreshTokenTtlSeconds;
   await prisma.refreshToken.create({
     data: {
       userId: user.id,
       tokenHash: hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + config.refreshTokenTtlSeconds * 1000),
+      restaurantId,
+      rememberMe,
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000),
     },
   });
 

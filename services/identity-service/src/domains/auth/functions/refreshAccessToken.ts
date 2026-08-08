@@ -24,6 +24,18 @@ export async function refreshAccessToken(input: RefreshInput): Promise<LoginResu
 
   await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
 
-  const { accessToken, refreshToken } = await issueTokenPair(user);
-  return { accessToken, refreshToken, user: mapUserToDto(user) };
+  // Carry the session's active restaurant and remember-me choice forward —
+  // a refresh should never silently reset either (see /auth/select-restaurant
+  // for the only place restaurantId is meant to change mid-session).
+  const { accessToken, refreshToken } = await issueTokenPair(user, {
+    restaurantId: stored.restaurantId,
+    rememberMe: stored.rememberMe,
+  });
+
+  return {
+    accessToken,
+    refreshToken,
+    rememberMe: stored.rememberMe,
+    user: mapUserToDto(user, stored.restaurantId),
+  };
 }

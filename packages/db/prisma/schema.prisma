@@ -5,6 +5,16 @@
 // **schema** (identity/inventory/purchasing/recipes/notifications) inside
 // the one shared database — the `multiSchema` preview feature + `@@schema(...)`
 // on every model is what enforces that boundary, not separate connections.
+//
+// Multi-restaurant tenancy scope (as of the Restaurant model below): an
+// Owner can own multiple Restaurants; every other role belongs to exactly
+// one. Restaurant -> Location is properly isolated (every Location carries
+// a restaurantId, listLocations/createLocation are scoped to the caller's
+// active restaurant). Item/Supplier/PurchaseOrder/Recipe/Notification are
+// NOT yet restaurant-scoped — they remain global catalogs shared across all
+// of an owner's restaurants for now (e.g. Item.sku is still globally
+// unique). Deepening isolation into those models is a deliberate follow-up,
+// not an oversight — flagged here so it isn't mistaken for full isolation.
 generator client {
   provider = "prisma-client-js"
   // Generated as a sibling of both src/ and dist/ (not nested inside src/)
@@ -38,10 +48,41 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Non-owner staff belong to exactly one restaurant. Owners leave this null
+  // — their accessible restaurants come from `ownedRestaurants` instead, and
+  // they pick an *active* one per session (the restaurantId JWT claim /
+  // RestaurantSwitcher), not a fixed home like staff have.
+  restaurantId String?
+  restaurant   Restaurant? @relation("StaffOfRestaurant", fields: [restaurantId], references: [id])
+
+  ownedRestaurants Restaurant[] @relation("OwnedRestaurants")
+
   roles         UserRole[]
   locations     UserLocation[]
   refreshTokens RefreshToken[]
 
+  @@index([restaurantId])
+  @@schema("identity")
+}
+
+// A restaurant business, owned by exactly one User (must hold the OWNER
+// role — enforced at the application layer via MANAGE_RESTAURANTS, not a DB
+// constraint). An Owner can own many; every other role belongs to exactly
+// one via User.restaurantId. Locations, items, suppliers etc. all live
+// "inside" a restaurant conceptually, but only Location actually carries a
+// restaurantId column today — see packages/db/prisma/schema.prisma's top
+// comment on scope for what's NOT yet tenant-isolated.
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  ownerUserId String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  owner User   @relation("OwnedRestaurants", fields: [ownerUserId], references: [id])
+  staff User[] @relation("StaffOfRestaurant")
+
+  @@index([ownerUserId])
   @@schema("identity")
 }
 
@@ -71,9 +112,14 @@ model RefreshToken {
   id        String    @id @default(cuid())
   userId    String
   tokenHash String    @unique
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
-  revokedAt DateTime?
+  // Carried forward across rotation (see issueTokenPair.ts) so a refresh —
+  // or a restaurant switch, which rotates the pair too — doesn't silently
+  // reset the session's active restaurant or remember-me persistence.
+  restaurantId String?
+  rememberMe   Boolean   @default(false)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -86,15 +132,21 @@ model RefreshToken {
 // ============================================================================
 
 model Location {
-  id        String   @id @default(cuid())
-  name      String
-  type      String
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id String @id @default(cuid())
+  // Plain id, not a Prisma `@relation` — Location lives in the `inventory`
+  // schema (inventory-service's), Restaurant lives in `identity`
+  // (identity-service's). Cross-service references are always opaque ids
+  // here, never a relation, same convention as e.g. StockTransaction.userId.
+  restaurantId String
+  name         String
+  type         String
+  address      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
   storageAreas StorageArea[]
 
+  @@index([restaurantId])
   @@schema("inventory")
 }
 

@@ -3,30 +3,38 @@ import { prisma } from "./db/client.js";
 import { hashPassword } from "./lib/hashPassword.js";
 
 /**
- * Bootstraps the very first Owner account so someone can log in and create
- * everyone else via POST /users. Safe to re-run — it's a no-op if the
- * account already exists.
+ * Bootstraps the very first Owner account, plus a restaurant they own, so
+ * someone can log in straight into a working dashboard and create everyone
+ * else via POST /users. Safe to re-run — each step is a no-op if it already
+ * exists.
  */
 async function main() {
   const email = "owner@restaurant.test";
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  let owner = await prisma.user.findUnique({ where: { email } });
+
+  if (!owner) {
+    const passwordHash = await hashPassword("Owner123!");
+    owner = await prisma.user.create({
+      data: {
+        name: "Restaurant Owner",
+        email,
+        passwordHash,
+        roles: { create: [{ role: "OWNER" }] },
+        locations: { create: [] },
+      },
+    });
+    console.log(`Seeded owner account: ${email} / Owner123!`);
+  } else {
     console.log(`Seed skipped — ${email} already exists.`);
-    return;
   }
 
-  const passwordHash = await hashPassword("Owner123!");
-  await prisma.user.create({
-    data: {
-      name: "Restaurant Owner",
-      email,
-      passwordHash,
-      roles: { create: [{ role: "OWNER" }] },
-      locations: { create: [] },
-    },
-  });
-
-  console.log(`Seeded owner account: ${email} / Owner123!`);
+  let restaurant = await prisma.restaurant.findFirst({ where: { ownerUserId: owner.id } });
+  if (!restaurant) {
+    restaurant = await prisma.restaurant.create({ data: { name: "Main Restaurant", ownerUserId: owner.id } });
+    console.log(`Seeded restaurant: ${restaurant.name} (${restaurant.id})`);
+  } else {
+    console.log(`Seed skipped — ${owner.email} already owns a restaurant (${restaurant.id}).`);
+  }
 }
 
 main()

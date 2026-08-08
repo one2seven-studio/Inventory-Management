@@ -4,6 +4,7 @@ import type { Location as PrismaLocation, StorageArea as PrismaStorageArea } fro
 export function mapLocationToDto(location: PrismaLocation): Location {
   return {
     id: location.id,
+    restaurantId: location.restaurantId,
     name: location.name,
     type: location.type as LocationType,
     address: location.address,

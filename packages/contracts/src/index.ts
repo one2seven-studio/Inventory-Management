@@ -5,6 +5,7 @@ export * from "./common/apiError.js";
 
 export * from "./identity/user.js";
 export * from "./identity/auth.js";
+export * from "./identity/restaurant.js";
 
 export * from "./inventory/location.js";
 export * from "./inventory/item.js";

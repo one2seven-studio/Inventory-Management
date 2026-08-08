@@ -1,11 +1,12 @@
 import type { FastifyInstance } from "fastify";
-import { loginInputSchema, refreshInputSchema } from "./schema.js";
+import { loginInputSchema, refreshInputSchema, selectRestaurantInputSchema } from "./schema.js";
 import { getRequestAuthContext, requireAuthenticated } from "../../plugins/requestAuthContext.js";
 import { ApiError } from "@platform/contracts";
 import { login } from "./functions/login.js";
 import { refreshAccessToken } from "./functions/refreshAccessToken.js";
 import { logout } from "./functions/logout.js";
 import { getCurrentUser } from "./functions/getCurrentUser.js";
+import { selectRestaurant } from "../restaurants/functions/selectRestaurant.js";
 
 export async function registerAuthRoutes(app: FastifyInstance) {
   app.post("/auth/login", async (request) => {
@@ -26,8 +27,19 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   app.get("/auth/me", { preHandler: requireAuthenticated }, async (request) => {
+    const { userId, restaurantId } = getRequestAuthContext(request);
+    if (!userId) throw ApiError.unauthorized();
+    return getCurrentUser(userId, restaurantId);
+  });
+
+  // Switches the session's active restaurant for an Owner with 2+ (or a
+  // fresh login left restaurant-less pending a pick) — issues a new token
+  // pair scoped to it. See RestaurantSwitcher / the /restaurants/new and
+  // /select-restaurant pages in the web app.
+  app.post("/auth/select-restaurant", { preHandler: requireAuthenticated }, async (request) => {
     const { userId } = getRequestAuthContext(request);
     if (!userId) throw ApiError.unauthorized();
-    return getCurrentUser(userId);
+    const input = selectRestaurantInputSchema.parse(request.body);
+    return selectRestaurant(userId, input);
   });
 }

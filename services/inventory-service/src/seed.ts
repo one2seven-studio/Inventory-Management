@@ -1,12 +1,27 @@
 import "./loadEnv.js";
 import { prisma } from "./db/client.js";
 
-/** Seeds a starter location + a few common items so the UI has something to show. Idempotent. */
+/**
+ * Seeds a starter location + a few common items so the UI has something to
+ * show. Idempotent. Location requires a restaurantId — this looks up the
+ * seeded Owner's restaurant directly via the shared @platform/db client
+ * (seed scripts are dev bootstrapping, not live request handling, so
+ * reaching across the identity/inventory schema boundary here is fine —
+ * unlike at runtime, where every cross-service read stays HTTP-only).
+ * Run `npm run db:seed -w services/identity-service` first.
+ */
 async function main() {
-  let location = await prisma.location.findFirst({ where: { name: "Main Branch" } });
+  const owner = await prisma.user.findUnique({ where: { email: "owner@restaurant.test" } });
+  const restaurant = owner ? await prisma.restaurant.findFirst({ where: { ownerUserId: owner.id } }) : null;
+  if (!restaurant) {
+    console.log("Skipped — no seeded restaurant found. Run `npm run db:seed -w services/identity-service` first.");
+    return;
+  }
+
+  let location = await prisma.location.findFirst({ where: { restaurantId: restaurant.id, name: "Main Branch" } });
   if (!location) {
     location = await prisma.location.create({
-      data: { name: "Main Branch", type: "BRANCH", address: "1 Market Street" },
+      data: { restaurantId: restaurant.id, name: "Main Branch", type: "BRANCH", address: "1 Market Street" },
     });
     await prisma.storageArea.createMany({
       data: [

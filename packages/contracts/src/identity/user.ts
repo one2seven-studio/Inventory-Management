@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ROLES } from "../common/roles.js";
+import { restaurantSchema } from "./restaurant.js";
 
 export const userSchema = z.object({
   id: z.string(),
@@ -9,6 +10,10 @@ export const userSchema = z.object({
   locationIds: z.array(z.string()),
   isActive: z.boolean(),
   createdAt: z.string(),
+  /** The session's currently-active restaurant — null until one is picked (see /auth/select-restaurant). */
+  restaurantId: z.string().nullable(),
+  /** Every restaurant this user can pick: owned ones for an Owner, or their single assigned one otherwise. */
+  restaurants: z.array(restaurantSchema),
 });
 export type User = z.infer<typeof userSchema>;
 

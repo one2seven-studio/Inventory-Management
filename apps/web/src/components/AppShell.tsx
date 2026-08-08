@@ -19,6 +19,7 @@ import {
 import { logoutAction } from "@/actions/logout";
 import { NavLinks, type NavItem } from "@/components/NavLinks";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RestaurantSwitcher } from "@/components/restaurants/RestaurantSwitcher";
 
 const navIcon = (Icon: LucideIcon) => <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden="true" />;
 
@@ -53,12 +54,13 @@ function initials(name: string): string {
 
 export function AppShell({ user, children }: { user: User; children: React.ReactNode }) {
   const navItems = getNavItems(user);
+  const canManageRestaurants = user.roles.some((role) => roleHasCapability(role, "MANAGE_RESTAURANTS"));
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="flex flex-col justify-between border-b border-outline-variant bg-surface-container-low p-4 md:h-screen md:w-60 md:border-b-0 md:border-r">
         <div>
-          <div className="mb-6 flex items-center justify-between gap-2 px-1">
+          <div className="mb-3 flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2">
               <Box className="h-5 w-5 text-primary" strokeWidth={2.5} aria-hidden="true" />
               <div>
@@ -67,6 +69,13 @@ export function AppShell({ user, children }: { user: User; children: React.React
               </div>
             </div>
             <ThemeToggle />
+          </div>
+          <div className="mb-6">
+            <RestaurantSwitcher
+              restaurants={user.restaurants}
+              activeRestaurantId={user.restaurantId ?? ""}
+              canManageRestaurants={canManageRestaurants}
+            />
           </div>
           <NavLinks items={navItems} />
         </div>
